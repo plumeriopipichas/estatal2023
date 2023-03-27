@@ -2,6 +2,7 @@ setwd("/home/FedericoYU/Documentos/Chamba/Olimpiada/Estatal 2023/estatal2023_Rpr
 
 library(dplyr)
 library(readr)
+library(stringr)
 
 source("funciones_adhoc.R")
 
@@ -23,12 +24,12 @@ lista_general_participacion$Escuela<-
   subte(lista_general_participacion$Escuela)
 
 ###---------- Cotejar las claves con la lista de asistencia de donde
-### se hicieron las portadas
+### se hicieron las portadas. 
 
 # asistencia_oficial<-list()
 # path<-"../listas_generadas/participacion_oficial/asistencia/"
 # m<-nchar(dir(path))
-# sedes <- substr(dir(path),14,m-4)
+# sedes <- substr(dir(path),18,m-4)
 # for (sede in sedes){
 #   x<-grep(sede,dir(path))
 #   asistencia_oficial[[sede]]<-read.csv(
@@ -46,7 +47,7 @@ lista_general_participacion$Escuela<-
 #   x <- which(lista_general_participacion$clave==clave)
 #   y <- which(asistencia$clave==clave)
 #   if (!asistencia$Nombre[x]==lista_general_participacion$Nombre[x]){
-#     distintos<-c(distintos,clave)    
+#     distintos<-c(distintos,clave)
 #   }
 #   if (length(x)==0){
 #     ausentes <- c(ausentes,clave)
@@ -57,5 +58,50 @@ lista_general_participacion$Escuela<-
 # }
 
 
+#-------------- agregar los registros extras y los que tienen cambios en 
+# la clave
 
-rm(clave,m,path,x,y)
+print(c("antes",nrow(lista_general_participacion)))
+lista_general_participacion <-rbind(lista_general_participacion,
+          read.csv("../listas_crudas/modificados_y_extras.csv"))
+print(c("despues",nrow(lista_general_participacion)))
+
+#-------------un poco de limpiez a la lista general ----------
+
+x<-which(lista_general_participacion$Nombre=="")
+lista_general_participacion <- lista_general_participacion[-x, ]
+lista_general_participacion$Primer_apellido<-
+  limpiar(lista_general_participacion$Primer_apellido)
+lista_general_participacion$Segundo_apellido<-
+  limpiar(lista_general_participacion$Segundo_apellido)
+lista_general_participacion$Nombre<-
+  limpiar(lista_general_participacion$Nombre)
+
+
+#---------- para las constancias de entrenadores ----------
+
+entrenadores_sedes <-list()
+path<-"../listas_crudas/entrenadores"
+m<-nchar(dir(path))
+sedes <- substr(dir(path),14,m-4)
+for (sede in sedes){
+  x<-grep(sede,dir(path))
+  entrenadores_sedes[[sede]]<-read.csv(
+    paste(path,"/",dir(path)[x],sep=""))
+  entrenadores_sedes[[sede]]$sede<-sede
+  print(c("entrenadores",sede))
+  print(dim(entrenadores_sedes[[sede]]))
+}
+
+lista_entrenadores<-juntar_bases(entrenadores_sedes)
+lista_entrenadores$Institucion<-subte(lista_entrenadores$Institucion)
+lista_entrenadores$Nombre<-notitle(lista_entrenadores$Nombre)
+lista_entrenadores$Nombre<-limpiar(lista_entrenadores$Nombre)
+lista_entrenadores<-unique(lista_entrenadores)
+
+write.csv(lista_entrenadores,"../listas_generadas/lista_entrenadores.csv",row.names = FALSE)
+rm(entrenadores_sedes)
+
+#------------------------------
+
+rm(m,path,sede,x)

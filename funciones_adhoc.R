@@ -96,3 +96,28 @@ respuestas <- function(clave){
                        respuesta=resp,resultado=veredicto)
       return(base) 
 }
+
+
+limpiar <- function(texto){
+  texto <- trimws(texto)
+  texto <- str_to_title(texto)
+  texto<-gsub(" De "," de ",texto)
+  texto<-gsub(" Del "," del ",texto)
+  texto<-gsub(" La "," la ",texto)
+  texto<-gsub("_"," ",texto)
+}
+
+notitle <- function(texto){
+  texto<-gsub("Ing.","",texto,ignore.case = TRUE)
+  texto<-gsub("Mtro.","",texto,ignore.case = TRUE)
+  texto<-gsub("MTRA.","",texto,ignore.case = TRUE)
+  texto<-gsub("Maestra ","",texto,ignore.case = TRUE)
+  texto<-gsub("M.C.","",texto,ignore.case = TRUE)
+  texto<-gsub("Lic.","",texto,ignore.case = TRUE)
+  texto<-gsub("Profra.","",texto,ignore.case = TRUE)
+  texto<-gsub("Profr.","",texto,ignore.case = TRUE)
+  texto<-gsub("Profa.","",texto,ignore.case = TRUE)
+  texto<-gsub("Prof.","",texto,ignore.case = TRUE)
+  texto<-gsub("Arq.","",texto,ignore.case = TRUE)
+  texto<-gsub("Arquitecto ","",texto,ignore.case = TRUE)
+}
