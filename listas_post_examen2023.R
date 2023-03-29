@@ -102,6 +102,45 @@ lista_entrenadores<-unique(lista_entrenadores)
 write.csv(lista_entrenadores,"../listas_generadas/lista_entrenadores.csv",row.names = FALSE)
 rm(entrenadores_sedes)
 
-#------------------------------
+#----------Depurar listas con las respuestas
 
-rm(m,path,sede,x)
+respuestas_sedes<-list()  #donde se guardaran las respuestas por sede, 
+#depuradas, sin mas datos
+sin_registro<-list() #donde se guardaran las claves que no aparecen 
+#en la lista del registro
+
+vars <- c("Identificacion","Aciertos")
+nr <- 12
+
+for (i in 1:12){
+  temp <- paste("Resp_",as.character(i),sep="")
+  vars<-c(vars,temp)
+}
+
+for (sede in sedes[c(1:8,11:15)]){
+  print(c("jojo",sede))
+  path <- paste("../listas_crudas/respuestas_examen/",
+                sede,"2023.csv", sep="")
+  respuestas_sedes[[sede]]<-read.csv(path)%>%
+    select(all_of(vars))%>%
+    unique()
+  path <- paste("../listas_generadas/respuestas_depuradas/",sede,
+    "_resp2023.csv",sep="")
+  write.csv(respuestas_sedes[[sede]],path,row.names = FALSE)
+  x<-which(respuestas_sedes[[sede]]$Identificacion%in%
+             lista_general_participacion$clave)
+  if (length(x)<nrow(respuestas_sedes[[sede]])){
+    sin_registro[[sede]]<-respuestas_sedes[[sede]][-x, ]
+    sin_registro[[sede]]$sede<-sede
+  }
+}
+
+sin_registro_todos <- juntar_bases(sin_registro)
+respuestas_examen <- juntar_bases(respuestas_sedes)
+
+
+write.csv(sin_registro_todos,"../listas_generadas/
+          examenes_sin_registro.csv",row.names = FALSE)
+
+
+rm(i,m,nr,path,sede,temp,x)
