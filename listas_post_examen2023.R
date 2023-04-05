@@ -3,11 +3,11 @@ setwd("/home/FedericoYU/Documentos/Chamba/Olimpiada/Estatal 2023/estatal2023_Rpr
 library(dplyr)
 library(readr)
 library(stringr)
+library(tools)
 
 source("funciones_adhoc.R")
 
 ###-------Hacer la lista general de participacion
-
 basica_sedes_oficial<-list()
 path<-"../listas_generadas/participacion_oficial/basica/"
 m<-nchar(dir(path))
@@ -175,10 +175,24 @@ y<-grep("ille",comite_examen$nivel)
 comite_examen_secundarias<-arrange(comite_examen[x, ],desc(Aciertos))
 comite_examen_prepas<-arrange(comite_examen[y, ],desc(Aciertos))
 
-para_constancias <- select(lista_completa,Nombre,Primer_apellido,Segundo_apellido,Escuela,Correo)%>%
-  filter(!is.na(Correo))
-  
+para_constancias <- select(lista_completa,Nombre,Primer_apellido,Segundo_apellido,
+                           Escuela,Correo,Correo_escuela)
+
+x<-grep("@",para_constancias$Correo)
+y<-grep("@",para_constancias$Correo_escuela)
+para_constancias<-para_constancias[union(x,y), ]
 para_constancias$Escuela<-subte(para_constancias$Escuela)
+para_constancias$Nombre_completo<-paste(para_constancias$Nombre,
+            para_constancias$Primer_apellido,para_constancias$Segundo_apellido)
+
+para_constancias<-select(para_constancias,Nombre_completo,Escuela,Correo,Correo_escuela)
+para_constancias$Correo<-subte_correo(para_constancias$Correo)
+para_constancias$Correo_escuela<-subte_correo(para_constancias$Correo_escuela)
+
+para_constancias<-arrange(para_constancias,Nombre_completo)
+
+inicio <- 1100
+para_constancias$folio <- inicio:(inicio+nrow(para_constancias)-1)  
 
 # write.csv(comite_examen,"../listas_generadas/puntuaciones_primer_examen/
 #           puntos_primer_examen_2023.csv",row.names=FALSE)
@@ -187,30 +201,38 @@ para_constancias$Escuela<-subte(para_constancias$Escuela)
 # write.csv(comite_examen_prepas,"../listas_generadas/puntuaciones_primer_examen/
 #           puntos_primer_examen_bach2023.csv",row.names=FALSE)
 
-write.csv(para_constancias,"../listas_generadas/lista_constancias_participacion.csv")
+
+write.csv(para_constancias,"../listas_generadas/lista_constancias_participacion.csv",
+          row.names = FALSE)
 
 #---------- lista para publicar quienes pasan a segunda etapa -------
 
 segunda_etapa_sec <- filter(lista_completa,Aciertos>7,!is.na(Nombre),
                             nivel=="Secundaria")%>%
                       select(Nombre,Primer_apellido,Segundo_apellido,Escuela,
-                             nivel)
+                             nivel,Correo,Correo_escuela)
 
 segunda_etapa_ms <- filter(lista_completa,Aciertos>8,!is.na(Nombre),
                             nivel=="Bachillerato")%>%
-  select(Nombre,Primer_apellido,Segundo_apellido,Escuela,nivel)
+  select(Nombre,Primer_apellido,Segundo_apellido,Escuela,nivel,Correo,Correo_escuela)
+
+correos_segunda_etapa<-unique(c(segunda_etapa_ms$Correo,segunda_etapa_ms$Correo_escuela))
 
 segunda_etapa<-rbind(segunda_etapa_sec,segunda_etapa_ms)%>%
-  arrange(Nombre,Primer_apellido,Segundo_apellido)%>%
   mutate(Nombre_completo=paste(Nombre,Primer_apellido,Segundo_apellido))%>%
-  select(Nombre_completo,Escuela,nivel)
+  select(Nombre_completo,Equipo=Escuela,nivel,Correo)
 
+segunda_etapa<-rbind(segunda_etapa,read.csv("../listas_crudas/directos_segunda.csv"))%>%
+  arrange(Nombre_completo)
 
-
+correos_segunda_etapa<-unique(c(segunda_etapa$Correos,correos_segunda_etapa))
 
 rm(segunda_etapa_ms,segunda_etapa_sec)
 
-write.csv(segunda_etapa,"../listas_generadas/publicar_segunda_etapa.csv")
+write.csv(select(segunda_etapa,-Correo),"../listas_generadas/publicar_segunda_etapa.csv",
+          row.names = FALSE)
+write.csv(correos_segunda_etapa,"../listas_generadas/correos_2e.csv",
+          row.names = FALSE)
 
 #----------para sacar puntuaciones por escuela
 
